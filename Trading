@@ -1,0 +1,5 @@
+git clone https://github.com/yourusername/repository-name.git
+# انسخ الملفات إلى المجلد
+git add .
+git commit -m "Add trading bot files"
+git push

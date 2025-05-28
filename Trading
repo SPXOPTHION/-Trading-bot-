@@ -1,5 +1,5 @@
-git clone https://github.com/yourusername/repository-name.git
-# انسخ الملفات إلى المجلد
-git add .
-git commit -m "Add trading bot files"
-git push
+enhanced_auto_bot.py
+spx_watchlist.py
+market_wide_scanner.py
+database.py
+early_detection_analyzer.py

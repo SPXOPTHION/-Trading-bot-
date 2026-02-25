@@ -1,102 +1,84 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+import yfinance as yf
+import numpy as np
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, CallbackContext
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-import asyncio
+# Function to fetch bullish stocks
+def fetch_bullish_stocks():
+    # Fetching stock data and implementation to find bullish stocks
+    pass
 
-# استخدم التوكن والـ Chat ID الموجود
-TELEGRAM_TOKEN = "8699821370:AAEQUSbLTgf7MmWqo5vV5LHPOz30wfqOfqw"
-CHAT_ID = "7854020427"
+# Function to fetch bearish stocks
+def fetch_bearish_stocks():
+    # Fetching stock data and implementation to find bearish stocks
+    pass
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """معالج أمر /start - يظهر القائمة الرئيسية"""
-    welcome_message = """
-👋 مرحباً بك في بوت توصيات الأسهم!
+# Function to analyze stocks
+def scan_stocks():
+    # Example stocks for analysis
+    stocks = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'FB', 'TSLA', 'NFLX', 'NVDA', 'BABA', 'DIS']
+    analysis_results = []
+    
+    for stock in stocks:
+        data = yf.Ticker(stock)
+        hist = data.history(period="1y")
 
-🎯 اختر ما تريد:
-"""
-    
-    # إنشاء الأزرار بشكل صحيح
-    keyboard = [
-        [InlineKeyboardButton("📈 توصيات CALL", callback_data='call')],
-        [InlineKeyboardButton("📉 توصيات PUT", callback_data='put')],
-        [InlineKeyboardButton("🔄 مسح الآن", callback_data='scan')],
-        [InlineKeyboardButton("ℹ️ معلومات", callback_data='info')]
-    ]
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await update.message.reply_text(
-        welcome_message,
-        reply_markup=reply_markup,
-        parse_mode='HTML'
-    )
-
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """معالج الأزرار"""
-    query = update.callback_query
-    
-    # يجب الرد على الـ callback فوراً
-    await query.answer()
-    
-    if query.data == 'call':
-        await query.edit_message_text("📈 جاري البحث عن توصيات CALL...")
-        # يمكنك إضافة الكود الخاص بك هنا
-        await asyncio.sleep(1)
-        await query.edit_message_text("✅ نتائج CALL:\n\nAPPL: شراء قوي")
+        # Calculate SMAs
+        hist['SMA50'] = hist['Close'].rolling(window=50).mean()
+        hist['SMA100'] = hist['Close'].rolling(window=100).mean()
+        hist['SMA200'] = hist['Close'].rolling(window=200).mean()
         
-    elif query.data == 'put':
-        await query.edit_message_text("📉 جاري البحث عن توصيات PUT...")
-        await asyncio.sleep(1)
-        await query.edit_message_text("✅ نتائج PUT:\n\nTSLA: بيع")
+        # Analyze volume
+        volume_avg = hist['Volume'].mean()
         
-    elif query.data == 'scan':
-        await query.edit_message_text("🔄 جاري المسح الشامل...")
-        await asyncio.sleep(2)
-        await query.edit_message_text("✅ المسح اكتمل!\n\n📊 عدد الإشارات: 5")
+        # Example signals (buy/sell) based on the SMAs
+        latest_close = hist['Close'].iloc[-1]
+        signal = 'Hold'  # Basic signal logic
+        if latest_close > hist['SMA50'].iloc[-1]:
+            signal = 'Buy'
+        elif latest_close < hist['SMA50'].iloc[-1]:
+            signal = 'Sell'
         
-    elif query.data == 'info':
-        await query.edit_message_text("""
-ℹ️ معلومات البوت:
+        analysis_results.append({
+            "stock": stock,
+            "latest_close": latest_close,
+            "signal": signal,
+            "volume_avg": volume_avg
+        })
+    
+    return analysis_results
 
-📌 النسخة: 1.0
-⏰ آخر تحديث: فبراير 2026
-🎯 الأسهم المتابعة: 65
+# Handlers
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text("Menu: CALL, PUT, Scan, Info")
 
-⚠️ إخلاء مسؤولية:
-التوصيات لأغراض تعليمية فقط
-"""
-)
+def call(update: Update, context: CallbackContext):
+    bullish_stocks = fetch_bullish_stocks()
+    update.message.reply_text(f'Bullish Stocks: {bullish_stocks}')
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """معالج أمر /help"""
-    help_text = """
-🆘 أوامر البوت:
+def put(update: Update, context: CallbackContext):
+    bearish_stocks = fetch_bearish_stocks()
+    update.message.reply_text(f'Bearish Stocks: {bearish_stocks}')
 
-/start - عرض القائمة الرئيسية
-/help - عرض المساعدة
-/scan - مسح فوري
+def scan(update: Update, context: CallbackContext):
+    stocks_analysis = scan_stocks()
+    update.message.reply_text(f'Stock Analysis: {stocks_analysis}')
 
-كل أزرار القائمة متفاعلة ✅
-    """
-    await update.message.reply_text(help_text)
+def info(update: Update, context: CallbackContext):
+    update.message.reply_text("This bot fetches stock data and provides analysis.")
 
 def main():
-    """تشغيل البوت"""
-    # إنشاء التطبيق
-    app = Application.builder().token(TELEGRAM_TOKEN).build()
-    
-    # إضافة المعالجات
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CallbackQueryHandler(button_handler))
-    
-    # تشغيل البوت
-    print("✅ البوت يعمل الآن...")
-    print("🚀 الرجاء إرسال /start في Telegram")
-    
-    app.run_polling()
+    updater = Updater("YOUR_API_TOKEN")
+    dispatcher = updater.dispatcher
 
-if __name__ == "__main__":
+    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(CommandHandler("call", call))
+    dispatcher.add_handler(CommandHandler("put", put))
+    dispatcher.add_handler(CommandHandler("scan", scan))
+    dispatcher.add_handler(CommandHandler("info", info))
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
     main()
